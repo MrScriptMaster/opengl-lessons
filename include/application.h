@@ -179,7 +179,7 @@ MAIN_DECL                                                                      \
     catch (...) {                                                              \
         std::cout << __FILE__ << " (" << __LINE__ << ")"                       \
                   << ":" << __FUNCTION__                                       \
-                  << ": " << e->what() << std::endl;                           \
+                  << ": " << "unknown exception" << std::endl;                 \
         result = -1;                                                           \
     }                                                                          \
     if (app) {                                                                 \
