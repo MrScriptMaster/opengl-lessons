@@ -14,12 +14,12 @@
 
 void Application::window_resize_callback(GLFWwindow* window, int width, int height) {
     Application* pThis = (Application*)glfwGetWindowUserPointer(window);
-    pThis->Resize(width, height);
+    pThis->gResize(width, height);
 } // window_resize_callback
 
 void Application::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     Application* pThis = (Application*)glfwGetWindowUserPointer(window);
-    pThis->OnKey(key, scancode, action, mods);
+    pThis->onKey(key, scancode, action, mods);
 } // key_callback
 
 void Application::gInit(const char* title) {
