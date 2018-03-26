@@ -50,6 +50,8 @@ protected:
     // default callbacks
     static void window_resize_callback(GLFWwindow* window, int width, int height);
     static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+    static void char_callback(GLFWwindow* window, unsigned int codepoint);
+    static void error_callback(int error, const char* desc);
     
 public:
     /**
@@ -97,6 +99,10 @@ public:
      * Позволяет привязать функциональность к клавишам клавиатуры.
      */
     virtual void onKey(int key, int scancode, int action, int mods) {}
+    /**
+     * Обратная реакция для специфичных символов
+     */
+    virtual void onChar(unsigned int codepoint) {}
     
 };  // class Application
 
