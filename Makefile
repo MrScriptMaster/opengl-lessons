@@ -1,11 +1,12 @@
 
-LESSONS := 01-basic
+LESSONS := lesson_1 \
+           lesson_2
 MAKE := 
 #make_main
-all:  $(LESSONS)
+all: $(LESSONS)
 
-#make_main:
-#	make --directory=common
-
-01-basic:
+lesson_1:
 	make --directory=01-basic
+
+lesson_2:
+	make --directory=02-simple-drawing
