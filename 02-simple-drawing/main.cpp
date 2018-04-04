@@ -30,6 +30,8 @@ BEGIN_APP_DECLARATION(Triangles)
 protected:
     unsigned int VBO, VAO, EBO;
     int shaderProgram;
+    int switcher;
+    int mode;
 END_APP_DECLARATION()
 
 DEFINE_APP(Triangles, "Triangles")
@@ -46,6 +48,8 @@ DEFINE_APP(Triangles, "Triangles")
  * z - от заднего фона экрана к наблюдателю. Координаты следует передавать в нормализованном виде, т.е.
  * их допустимые значения лежат в промежутке от 0.0 до (+/-)1.0. Все что выходит за эти пределы считается
  * невидимым и обрезается в случае, если система координат не перемещается.
+ * 
+ * Началом отсчета по умолчанию является середина viewport по всем осям.
  *
  * Участок памяти на графической карте, который используется для хранения вершин, называется буферизованным
  * вершинным объектом (vertex buffer objects (VBO)). Шейдеры исполняются на процессоре графической карты,
@@ -62,13 +66,37 @@ DEFINE_APP(Triangles, "Triangles")
  * начинаться с номера версии OpenGL, для которой они поставляются.
  */
 
+/*
+ * Следующий вершинный шейдер демонстрирует общую структуру шейдера вообще.
+ * Первая строка шейдера объявляет версию OpenGL для которой он написан. В этом примере
+ * это версия 3.3.0 (330).
+ * 
+ * У шейдера выделяются входы и выходы. В этом шейдере всего один вход, который объявляется
+ * через оператор in. В данном случае мы принимаем в виде трехмерного вектора вершину, для
+ * ссылки на которую будет использоваться имя aPos. С помощью оператора layout (location = 0) мы указываем
+ * место ее хранения.
+ * 
+ * После объявления входа начинается тело шейдера, которое оформляется в функции main. Переменная
+ * gl_Position является предопределенным вектором размерности 4 (vec4), в котором первые три значения
+ * указывают координату вершины, а четвертое - делитель перспективы. В данном случае перспективы нет,
+ * поэтому мы должны передавать 1.0. gl_Position является выходом шейдера. В этом примере шейдер ничего
+ * не делает с входной вершиной, а просто переписывает ее как есть в выходную переменную.
+ */
 const char* vertexShaderS = "#version 330 core\n"
     "layout (location = 0) in vec3 aPos;\n"
     "void main()\n"
     "{\n"
-    "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+    "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0f);\n"
     "}\0";
 
+/* 
+ * Шейдер фрагментов также прост как и шейдер вершин. В этом примере мы объявляем выходную переменную
+ * FragColor. В OpenGL цвет получается по схеме RGB, т.е. через сочетание красного, зеленого и синего
+ * полутонов, где единица означает максимальный оттенок (красный, зеленый или синий). 
+ * Четвертный параметр выходного текста отвечает за прозрачность, где 1 - это полностью не прозрачный.
+ * 
+ * В этом шейдере мы присваиваем каждой вершине одинаковый цвет (в данном случае оранжевый).
+ */
 const char* fragmentShaderS = "#version 330 core\n"
     "out vec4 FragColor;\n"
     "void main()\n"
@@ -79,6 +107,9 @@ const char* fragmentShaderS = "#version 330 core\n"
 void Triangles::gInit(const char* title) {
     base::gInit(title);
     glfwSwapInterval(1);
+    
+    switcher = 0;
+    mode = 0;
     
     // Сборка и компиляция шейдеров
     int success = 0;
@@ -127,25 +158,53 @@ void Triangles::gInit(const char* title) {
         -0.5f, -0.5f, 0.0f,  // bottom left
         -0.5f,  0.5f, 0.0f   // top left 
     };
+    // индексы для индексного рисвания
+    // при индексном рисовании мы подсказываем OpenGL по индексам в каком порядке рисовать вершины
+    // Мы используем индексы, чтобы нарисовать прямоугольник из двух треугольников по одному набору вершин
     unsigned int indices[] = {  // note that we start from 0!
         0, 1, 3,  // first Triangle
         1, 2, 3   // second Triangle
     };
     
-    // выделяем место под буферы для вершин
+    // генерируем массив (Vertex Array Object), который будет хранить атрибуты.
+    // VAO должен ассоциироваться с VBO.
     glGenVertexArrays(1, &VAO);
+    // генерируем буфер для вершин
     glGenBuffers(1, &VBO);
+    // генерируем буфер для элементов
     glGenBuffers(1, &EBO);
     
-    // связываем вершины в массиве с буфером VAO (Vertex Array Object)
+    // привязывем буфер вершин
     glBindVertexArray(VAO);
+    // привязываем буфер для вершин к контексту. С каждым VBO буфером должен быть связан один VAO буфер
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    // передаем в буфер координаты вершин и указываем стратегию их перерисовывания
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+    // буфер элементов привязывается 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
+    /*
+     * Следующей функцией мы подсказываем OpenGL как нужно читать поток из входных
+     * вершин:
+     *  - первый аргумент - где размещать вершины. Этот 0 соотносится со строкой layout (location = 0)
+     *    в шейдере вершин
+     *  - второй аргумент - сколько элементов массива нужно записать в один вектор. В шейдере используется
+     *    vec3 поэтому мы записываем 3.
+     *  - третий аргумент - какой тип данных используется в векторе. Здесь это GL_FLOAT.
+     *  - четвертый аргумент - нужно ли нормировать значения вершин. Мы устанавливаем GL_FALSE, потому
+     *    что вершины передаются в уже нормированном виде.
+     *  - пятый аргумент - это шаг (stride). После того как одна вершина обработана в массиве, мы говорим на сколько 
+     *    нужно элементов массива шагнуть, чтобы начать интерпретировать новую вершину. В данном случае
+     *    3*sizeof(float) байт.
+     *  - шестой аргумент - это смещение, чтобы показать с какой позиции начинаются данные внутри буфера.
+     *    В этом примере нам смещение не требуется.
+     */
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    /*
+     * Включаем атрибуты вершин
+     */
     glEnableVertexAttribArray(0);
 
     // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
@@ -163,18 +222,55 @@ void Triangles::gRender(bool auto_redraw) {
     
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-
+    
+    switch (mode) {
+        case 1:
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            break;
+        case 0:
+        default:
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
+    
     // draw our first triangle
     glUseProgram(shaderProgram);
     glBindVertexArray(VAO); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    switch(switcher)
+    {
+        case 1:
+            // эта функция завставляет рисовать из буфера вершин
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+            break;
+        case 2:
+            glDrawArrays(GL_TRIANGLES, 1, 3);
+            break;
+        case 3:
+            glDrawArrays(GL_TRIANGLES, 2, 3);
+            break;
+        case 0:
+        default:
+            // эта функция заставляет OpenGL рисовать из буфера индексов
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        
+    }
     // glBindVertexArray(0); // no need to unbind it every time 
  
     base::gRender(auto_redraw);
 }
 
 void Triangles::onKey(int key, int scancode, int action, int mods) {
-    
+    if (key == GLFW_KEY_1 && action == GLFW_PRESS)
+        switcher = 0;
+    else if (key == GLFW_KEY_2 && action == GLFW_PRESS) 
+        switcher = 1;
+    else if (key == GLFW_KEY_3 && action == GLFW_PRESS) 
+        switcher = 2;
+    else if (key == GLFW_KEY_4 && action == GLFW_PRESS) 
+        switcher = 3;
+    else if (key == GLFW_KEY_8 && action == GLFW_PRESS) 
+        mode = 1;
+    else if (key == GLFW_KEY_9 && action == GLFW_PRESS) 
+        mode = 0;
 }
 
 void Triangles::gFinalize() {
