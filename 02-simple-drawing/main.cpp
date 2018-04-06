@@ -245,7 +245,8 @@ void Triangles::gInit(const char* title) {
      */
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     /*
-     * Включаем атрибуты вершин
+     * Включаем атрибуты вершин. Аргумент функции glEnableVertexAttribArray соотносится с позицией
+     * атрибутов, указанной в glVertexAttribPointer в первом аргументе.
      */
     glEnableVertexAttribArray(0);
     /*
