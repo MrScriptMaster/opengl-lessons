@@ -19,6 +19,7 @@ protected:
     Shader* m_Shaders;
     GLuint VBO, VAO, EBO;
     GLuint texture_1, texture_2;
+    float mixValue;
 END_APP_DECLARATION()
 
 DEFINE_APP(Textures, "Another Textures")
@@ -28,7 +29,7 @@ DEFINE_APP(Textures, "Another Textures")
 
 void Textures::gInit(const char* title) {
     base::gInit(title);
-    
+    mixValue = 0.2;
     if (!(m_Shaders = new Shader(SHADER_PATH_PREFIX"/3.3.shader06.vs.glsl", 
                                  SHADER_PATH_PREFIX"/3.3.shader06.fs.glsl"))) {
         throw std::logic_error("something wrong with shaders");
@@ -128,6 +129,8 @@ void Textures::gRender(bool auto_redraw) {
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, texture_2);
     m_Shaders->setInt("ourTexture2",1);
+    // устанавливаем коэффициент смешения двух текстур (нажимайте стрелки "вверх" и "вниз")
+    m_Shaders->setFloat("mixValue", mixValue);
     
     // Рисование
     glBindVertexArray(VAO);
@@ -148,6 +151,16 @@ void Textures::gFinalize() {
 } // gFinalize
 
 void Textures::onKey(int key, int scancode, int action, int mods) {
-    
-    
+    if (key == GLFW_KEY_UP && action == GLFW_PRESS)
+    {
+        mixValue += 0.1f;
+        if (mixValue >= 1.0f)
+            mixValue = 1.0f;
+    }
+    if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
+    {
+        mixValue -= 0.1f;
+        if (mixValue <= 0.0f)
+            mixValue = 0.0f;
+    }
 } // onKey
