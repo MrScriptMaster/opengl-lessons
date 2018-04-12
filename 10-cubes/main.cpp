@@ -1,74 +1,19 @@
 /*
- * Теперь у нас есть все знания, чтобы визуализировать трехмерный объект. В этом примере это будет куб. После наложения текстуры ящика
- * 
- * Чтобы построить куб необходимо иметь 36 точек (каждая сторона строится по двум треугольникам и у каждого по три вершины).
- * В этом примере вершины хранятся в самой программе, но это сделано только в академических целях. На практике
- * вершины объектов хранятся в файлах в некотором формате, которые считываются и выгружаются основной программой
- * по мере необходимости.
- * 
- * Также мы познакомимся с z-буфером (или буфер глубины), который используется в тестах на глубину. Он нам будет нужен, чтобы создать иллюзию
- * глубины сцены.
+ * Пользуясь предыдущим примером попробуем нарисовать на сцене несколько ящиков, но в разных позициях на сцене.
+ * Так как модели всех ящиков у нас будут абсолютно одинаковые, не нужно делать какие либо изменения в загрузке
+ * модели. Все, что мы должны сделать, это применить свою матрицу модели для каждого из ящиков. При этом мы применяем
+ * функцию рисования для одних и тех же вершин.
  */ 
 
 #include "application.h"
 #include "shader.h"
 #include "SOIL.h"
+#include "model_cube.h"    // вершины для куба мы берем здесь
 
 #include <iostream>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
-/*
- * Атрибуты для модели куба
- * 
- * В этой модели мы отказываемся от атрибутов цветов вершин, потому что мы все равно накладываем
- * текстуру. Это позволяет сэкономить немного памяти, потому что массив становится меньше.
- */
-GLfloat cube_vertices[] = {
-    // координаты         // текстурные координаты
-    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-
-    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
-    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-};
 
 BEGIN_APP_DECLARATION(Cube)
     virtual void gInit(const char* title = NULL);
@@ -87,7 +32,7 @@ protected:
     GLfloat rotate_angle;
 END_APP_DECLARATION()
 
-DEFINE_APP(Cube, "Cube")
+DEFINE_APP(Cube, "Cubes")
 
 #define SHADER_PATH_PREFIX    "../shaders"
 #define TEXTURE_PATH_PREFIX   "../textures"
@@ -106,7 +51,7 @@ void Cube::gInit(const char* title) {
     glGenBuffers(1, &VBO);
     glBindVertexArray(VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(models::cube_vertices), models::cube_vertices, GL_STATIC_DRAW);
     
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
     glEnableVertexAttribArray(0);
@@ -162,23 +107,53 @@ void Cube::gRender(bool auto_redraw) {
     glBindTexture(GL_TEXTURE_2D, texture_box);
     // передача текстуры во фрагментный шейдер
     m_Shaders->setInt("ourTexture",0);
-    // матрицы 
+    /* 
+     * Много ящиков
+     * ---------------------------
+     * Мы немного усложним рисование сцены. Все ящики будут рисоваться в цикле. Один из ящиков можно
+     * будет вращать, используя стрелки "влево" и "вправо".
+     */    
+    // Мы задаем разные оси вращения и позиции на сцене через следующий массив векторов
+    glm::vec3 cubePositions[] = {
+        glm::vec3( 0.0f,  0.0f,  0.0f), 
+        glm::vec3( 2.0f,  5.0f, -15.0f), 
+        glm::vec3(-0.5f, -0.2f, -1.5f),  
+        glm::vec3(-2.8f, -0.0f, -2.3f),  
+        glm::vec3( 2.4f, -0.4f, -1.5f),  
+        glm::vec3(-1.7f,  1.0f, -4.5f),  
+        glm::vec3( 0.3f, -2.0f, -1.5f),  
+        glm::vec3( 0.5f,  2.0f, -2.5f), 
+        glm::vec3( 0.5f,  0.2f, -1.5f), 
+        glm::vec3(-1.3f,  1.0f, -1.5f)  
+    };
+    // матрицы
     glm::mat4 model;
     glm::mat4 view;
     glm::mat4 projection;
-    model = glm::rotate(model, glm::radians(rotate_angle), glm::vec3(0.0f, 1.0f, 0.0f));
-    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-    projection = glm::perspective(glm::radians(45.0f), (GLfloat)800 / (GLfloat)600, 0.1f, 100.0f);
+    // получаем позиции в шейдере
     GLint modelLoc = glGetUniformLocation(m_Shaders->ID, "model");
     GLint viewLoc = glGetUniformLocation(m_Shaders->ID, "view");
     GLint projLoc = glGetUniformLocation(m_Shaders->ID, "projection");
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+    // матрицы вида и проекции не изменяются
+    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+    projection = glm::perspective(45.0f, (GLfloat)800 / (GLfloat)600, 0.1f, 100.0f);
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection)); 
+    glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
     
     // Рисование
     glBindVertexArray(VAO);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    for (uint i = 0; i < sizeof cubePositions / sizeof *cubePositions; i++) {
+        // каждый ящик находится на своей позиции
+        model = glm::translate(model, cubePositions[i]);
+        GLfloat angle;
+        if (i == 0)
+            angle = rotate_angle;
+        else
+            angle = 20.0f * i;
+        model = glm::rotate(model, glm::radians(angle), glm::vec3(0.3f, 1.0f, 0.5f));
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+    }
     glBindVertexArray(0);
     
     base::gRender(auto_redraw);
@@ -194,14 +169,13 @@ void Cube::gFinalize() {
 
 void Cube::onKey(int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_LEFT && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
-        rotate_angle -= 1.0f;
+        rotate_angle -= 0.7f;
         if (rotate_angle < 0.0f)
             rotate_angle = 360.0f;
     }
     else if (key == GLFW_KEY_RIGHT && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
-        rotate_angle += 1.0f;
+        rotate_angle += 0.7f;
         if (rotate_angle > 360.0f)
             rotate_angle = 0.0f;
     }
 } // onKey
-
