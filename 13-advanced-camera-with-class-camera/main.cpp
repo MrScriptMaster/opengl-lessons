@@ -18,6 +18,8 @@ BEGIN_APP_DECLARATION(Cube)
     virtual void gRender(bool auto_redraw = true);
     virtual void gFinalize();
     void onKey(int key, int scancode, int action, int mods);
+    void onMouseMove(double xpos, double ypos);
+    void onMouseScroll(double xoffset, double yoffset);
     Cube() 
     : base(),
     m_Shaders(nullptr)
@@ -34,14 +36,6 @@ DEFINE_APP(Cube, "Cubes")
 #define SHADER_PATH_PREFIX    "../shaders"
 #define TEXTURE_PATH_PREFIX   "../textures"
 
-/*
- * Объявление обработчика событий мыши - движение
- */
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-/*
- * Объявление обработчика событий мыши - скроллинг
- */
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 //----------------------------------------------------------------------------
 // Настройка камеры
 Camera m_Camera(glm::vec3(0.0f, 0.0f, 3.0f));
@@ -55,9 +49,7 @@ float lastFrame = 0.0f;         // момент отрисовки послед�
 //----------------------------------------------------------------------------
 void Cube::gInit(const char* title) {
     base::gInit(title);
-    // Подключаем обработчики мыши
-    glfwSetCursorPosCallback(m_pWindow, mouse_callback);
-    glfwSetScrollCallback(m_pWindow, scroll_callback);
+
     // Отключаем курсор
     glfwSetInputMode(m_pWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     
@@ -185,8 +177,7 @@ void Cube::onKey(int key, int scancode, int action, int mods) {
 } // onKey
 
 //---------------------------------------------------------------------
-void mouse_callback(GLFWwindow* window, double xpos, double ypos)
-{
+void Cube::onMouseMove(double xpos, double ypos) {
      if (firstMouse)
     {
         lastX = xpos;
@@ -203,7 +194,6 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     m_Camera.ProcessMouseMovement(xoffset, yoffset);
 } // mouse_callback
 
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
-{
+void Cube::onMouseScroll(double xoffset, double yoffset) {
     m_Camera.ProcessMouseScroll(yoffset);
 } // scroll_callback

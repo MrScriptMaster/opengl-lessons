@@ -37,6 +37,15 @@ void Application::error_callback(int error, const char* desc) {
     std::cerr << "GLFW error: " << desc << std::endl;
 } // error_callback
 
+void Application::mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+    Application* pThis = (Application*)glfwGetWindowUserPointer(window);
+    pThis->onMouseMove(xpos, ypos);
+} // mouse_callback
+
+void Application::scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+    Application* pThis = (Application*)glfwGetWindowUserPointer(window);
+    pThis->onMouseScroll(xoffset, yoffset);
+} // scroll_callback
 //-----------------------------------------------------------------------
 void Application::gInit(const char* title) {
     if (!glfwInit()) {
@@ -61,6 +70,8 @@ void Application::gInit(const char* title) {
     glfwSetKeyCallback(m_pWindow, key_callback);
     glfwSetCharCallback(m_pWindow, char_callback);
     glfwSetErrorCallback(error_callback);
+    glfwSetCursorPosCallback(m_pWindow, mouse_callback);
+    glfwSetScrollCallback(m_pWindow, scroll_callback);
     
     /*****************/
     glfwMakeContextCurrent(m_pWindow);

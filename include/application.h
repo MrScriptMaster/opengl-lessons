@@ -52,6 +52,8 @@ protected:
     static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
     static void char_callback(GLFWwindow* window, unsigned int codepoint);
     static void error_callback(int error, const char* desc);
+    static void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+    static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
     
 public:
     /**
@@ -100,9 +102,17 @@ public:
      */
     virtual void onKey(int key, int scancode, int action, int mods) {}
     /**
-     * \brief Обратная реакция для специфичных символов
+     * \brief Обратная реакция для специфичных символов.
      */
     virtual void onChar(unsigned int codepoint) {}
+    /**
+     * \brief Обратная реакция для событий движения мышью.
+     */
+    virtual void onMouseMove(double xpos, double ypos) {}
+    /**
+     * \brief Обратная реакция для событий вращения колесика мыши.
+     */
+    virtual void onMouseScroll(double xoffset, double yoffset) {}
     
 };  // class Application
 
