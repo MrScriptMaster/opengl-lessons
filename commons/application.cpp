@@ -78,7 +78,12 @@ void Application::gInit(const char* title) {
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         throw std::logic_error("error response from the GLAD: failure when GL loading");
     }
-    gResize(G_DEFAULT_WIN_WIDTH_, G_DEFAULT_WIN_HEIGHT_);
+    if (m_imain_window_width <=0 || m_imain_window_height <=0 ) {
+        gResize(G_DEFAULT_WIN_WIDTH_, G_DEFAULT_WIN_HEIGHT_);
+    }
+    else {
+        gResize(m_imain_window_width, m_imain_window_height);
+    }
 } // gInit
 
 void Application::gFinalize() {

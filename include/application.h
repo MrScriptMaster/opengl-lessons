@@ -41,11 +41,20 @@
 
 class Application {
 protected:
-    inline Application() {}
+    inline Application()
+        : m_imain_window_width(-1),
+          m_imain_window_height(-1),
+          m_pWindow(nullptr) {}
+    inline Application(int width, int height) 
+        : m_imain_window_width(width),
+          m_imain_window_height(height),
+          m_pWindow(nullptr) {}
     virtual ~Application() {}
     
     static Application* s_app;
     GLFWwindow* m_pWindow;
+    int m_imain_window_width;
+    int m_imain_window_height;
     
     // default callbacks
     static void window_resize_callback(GLFWwindow* window, int width, int height);
@@ -95,6 +104,7 @@ public:
      */
     virtual void gResize(int width, int height) {
         glViewport(0, 0, width, height);
+        glfwGetWindowSize(m_pWindow, &m_imain_window_width, &m_imain_window_height);
     }
     
     /**
@@ -113,6 +123,18 @@ public:
      * \brief Обратная реакция для событий вращения колесика мыши.
      */
     virtual void onMouseScroll(double xoffset, double yoffset) {}
+    /**
+     * \brief Запросить ширину главного окна.
+     */
+    int getWindowWidth() {
+        return m_imain_window_width;
+    }
+    /**
+     * \brief Запросить высоту главного окна.
+     */
+    int getWindowHeight() {
+        return m_imain_window_height;
+    }
     
 };  // class Application
 
