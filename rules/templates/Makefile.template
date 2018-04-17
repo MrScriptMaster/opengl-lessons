@@ -1,0 +1,35 @@
+
+SOURCE_PREFIX := ./src
+OBJ_PREFIX := ./obj
+COMPILER := g++
+LINK := g++
+INCLUDES := ./include
+LFLAGS :=
+CFLAGS := 
+DEFINE := 
+LIBS :=
+L_LIBS :=
+
+vpath %.cpp ./src
+vpath %.o ./obj
+
+OBJ := $(sort $(patsubst $(SOURCE_PREFIX)/%, %, $(patsubst %.cpp, %.o, $(wildcard $(SOURCE_PREFIX)/*.cpp))))
+SRC := $(sort $(patsubst $(SOURCE_PREFIX)/%, %, $(wildcard $(SOURCE_PREFIX)/*.cpp)))
+
+.PHONY: all hello make_env
+all: make_env hello
+
+hello: $(OBJ)
+	$(LINK) $^ $(LFLAGS) -o $@ $(addprefix -L,$(LIBS)) $(L_LIBS)
+
+$(OBJ): $(SRC)
+
+make_env:
+	@mkdir -p $(OBJ_PREFIX)
+
+print:
+	echo $(SRC)
+
+%.o: %.cpp
+	$(COMPILER) -c -MD $(CFLAGS) $(DEFINE) $(addprefix -I, $(INCLUDES)) -o $(OBJ_PREFIX)/$@ $<
+
