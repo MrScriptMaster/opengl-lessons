@@ -2,7 +2,7 @@
 # Input parameters                                                             #
 ################################################################################
 SOURCE_PREFIX := ./src
-OBJ_PREFIX    := ./obj
+OBJ_PREFIX    := ./.obj
 COMPILER      := g++
 LINK          := g++
 INCLUDES      := ./include
