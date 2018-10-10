@@ -1,0 +1,57 @@
+################################################################################
+# Input parameters                                                             #
+################################################################################
+SOURCE_PREFIX := ./src
+OBJ_PREFIX    := ./obj
+COMPILER      := g++
+LINK          := g++
+INCLUDES      := ./include
+LFLAGS        := 
+CFLAGS        := 
+DEFINE        := 
+LIBS          := 
+L_LIBS        := 
+APP_NAME      := test
+RM            := rm -rf
+
+################################################################################
+# Generate lists                                                               #
+################################################################################
+OBJ    := $(sort $(patsubst $(SOURCE_PREFIX)/%, %, $(patsubst %.cpp, %.o, $(wildcard $(SOURCE_PREFIX)/*.cpp))))
+P_OBJ  := $(sort $(addprefix $(OBJ_PREFIX)/, $(patsubst $(SOURCE_PREFIX)/%, %, $(patsubst %.cpp, %.o, $(wildcard $(SOURCE_PREFIX)/*.cpp)))))
+DFILES := $(notdir $(sort $(patsubst %.cpp, %.d, $(wildcard $(SOURCE_PREFIX)/*.cpp))))
+
+vpath %.cpp $(SOURCE_PREFIX)
+vpath %.c $(SOURCE_PREFIX)
+vpath %.d $(OBJ_PREFIX)
+vpath %.o $(OBJ_PREFIX)
+vpath %.h $(INCLUDES)
+
+################################################################################
+# Main targets                                                                 #
+################################################################################
+.PHONY: all $(APP_NAME) make_dirs clean
+all: make_dirs $(DFILES) $(OBJ) $(APP_NAME)
+
+make_dirs:
+	@mkdir -p $(OBJ_PREFIX)
+	@mkdir -p include src
+
+$(APP_NAME): $(P_OBJ)
+	$(LINK) $^ $(LFLAGS) -o $@ $(addprefix -L,$(LIBS)) $(L_LIBS)
+
+clean:
+	$(RM) $(OBJ_PREFIX)/*.d
+	$(RM) $(OBJ_PREFIX)/*.o
+	$(RM) $(APP_NAME)
+
+################################################################################
+# Rules                                                                        #
+################################################################################
+%.o: %.cpp
+	$(COMPILER) -c $(CFLAGS) $(DEFINE) $(addprefix -I, $(INCLUDES)) -o $(OBJ_PREFIX)/$@ $<
+
+%.d: %.cpp
+	$(COMPILER) -M $(CFLAGS) $(DEFINE) $(addprefix -I, $(INCLUDES)) $< -o $(OBJ_PREFIX)/$@  
+
+include $(wildcard $(OBJ_PREFIX)/*.d)
