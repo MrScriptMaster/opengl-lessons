@@ -30,7 +30,7 @@ vpath %.h $(INCLUDES)
 ################################################################################
 # Main targets                                                                 #
 ################################################################################
-.PHONY: all $(APP_NAME) make_dirs clean
+.PHONY: all make_dirs clean
 all: make_dirs $(DFILES) $(OBJ) $(APP_NAME)
 
 make_dirs:
