@@ -1,14 +1,31 @@
 #!/bin/bash
 
 ################################################################################
+# Version: 1.0 (for Linux)
 # Usage:
 #   <filename> [-h|-?|--help] [-i|--install] [-v|--verbose] 
 #     [--name=<project_name>] [--make-build-script]
+#
+#   Options:
+#     -h|-?|--help          Print usage string
+#     -i|--install          Copy this script to '/usr/local/sbin'
+#     -v|--verbose          Launch script in verbose mode
+#     --name=<String>       The name for a sandbox
+#     --make-build-script   Generate build.sh script
+#
+# Instructions:
+#   0. This script will facilitate the creation of a typical sandbox under 
+#      the archetype of the 'Boilerplate' build. The script generates a typical
+#      project structure with build scripts for z/OS USS.
+#      The script works in interactive mode.
+#   1. TBD
+#
 ################################################################################
 
 usage() {
     echo "Usage:"
-    printf ""
+    printf "$1 [-h|-?|--help] [-i|--install] [-v|--verbose]\n"
+    printf "  [--name=<project_name>] [--make-build-script]\n"
 }
 
 CONST_INSTALL_PATH="/usr/local/sbin"
@@ -136,10 +153,11 @@ create_sandbox() {
         _say "Create file: $PWD/$CONST_PROJECT_NAME/make.sh"
         touch $PWD/$CONST_PROJECT_NAME/make.sh
         echo '#!/usr/bin/env bash' >> $PWD/$CONST_PROJECT_NAME/make.sh
-        echo 'export PRODUCT=' >> $PWD/$CONST_PROJECT_NAME/make.sh
-        echo 'export HLQ=' >> $PWD/$CONST_PROJECT_NAME/make.sh
+        read -p "Enter a value for PRODUCT: " TEMP_ANSWER
+        echo "export PRODUCT=$TEMP_ANSWER" >> $PWD/$CONST_PROJECT_NAME/make.sh
+        read -p "Enter a value for HLQ: " TEMP_ANSWER
+        echo "export HLQ=$TEMP_ANSWER" >> $PWD/$CONST_PROJECT_NAME/make.sh
         echo 'make $1 $2 $3 $4 $5' >> $PWD/$CONST_PROJECT_NAME/make.sh
-        _say1 "[Info]: Do not forget specify PRODUCT and HLQ in \"$PWD/$CONST_PROJECT_NAME/make.sh\""
         # .gitignore -----------------------------------------------------------
         _say "Create file: $PWD/$CONST_PROJECT_NAME/.gitignore"
         # rsync/exclude.txt ----------------------------------------------------
@@ -164,7 +182,7 @@ create_sandbox() {
         echo 'cd ..' >> $PWD/$CONST_PROJECT_NAME/rsync/sync.sh
         printf 'rsync --protocol=26 --recursive --verbose --delete --copy-links --size-only --checksum --compress --exclude-from=./rsync/exclude.txt . rsync://' >> $PWD/$CONST_PROJECT_NAME/rsync/sync.sh
         _ask "specify sandbox on z/OS USS"
-        if [ $ANSWER = "y" ];then
+        if [ $ANSWER = "y" ]; then
             read -p "Enter \"rsync\" link: " TEMP_ANSWER
             printf "$TEMP_ANSWER" >> $PWD/$CONST_PROJECT_NAME/rsync/sync.sh
             _say1 "[Info]: rsync link is \"rsync://$TEMP_ANSWER\""
@@ -187,32 +205,60 @@ create_build_script() {
     CONNECTION=$TEMP_ANSWER
     read -p "Enter server for SSH: " TEMP_ANSWER
     CONNECTION="$CONNECTION@$TEMP_ANSWER"
-    _say1 "[Info]: Project name is $CONNECTION" --info
+    _say1 "[Info]: Connection is $CONNECTION" --info
     read -p "Enter absolute path to sandbox on USS: " TEMP_ANSWER
-    PATH=$TEMP_ANSWER
-    _say1 "[Info]: Path to USS $PATH" --info
-    COMMAND_DEFAULT="ssh $CONNECTION 'cd $PATH && ./make.sh'"
-    COMMAND_CLEAR="ssh $CONNECTION 'cd $PATH && ./make.sh clear'"
+    PATH="$TEMP_ANSWER"
+    read -p "Enter a value for PRODUCT: " TEMP_ANSWER
+    PRODUCT_VALUE=$TEMP_ANSWER
+    read -p "Enter a value for HLQ: " TEMP_ANSWER
+    HLQ_VALUE=$TEMP_ANSWER
+    #_say1 "[Info]: Path to USS $PATH" --info
+    COMMAND_DEFAULT="ssh $CONNECTION <<End-Of-Session"
+    COMMAND_END="End-Of-Session"
     echo '#!/bin/bash' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
+    echo 'TARGETS=' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
     echo 'process_flags() {' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
     echo '    while :; do' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
-    echo '        case $1 in' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
-    echo '            -c|--clear)' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
-    echo "                $COMMAND_CLEAR" >> "$PWD/$CONST_PROJECT_NAME/build.sh"
+    echo '        case $1 in' >> "$PWD/$CONST_PROJECT_NAME/build.sh"                       
+    echo '           -c|--clean)' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
+    echo "                $COMMAND_DEFAULT" >> "$PWD/$CONST_PROJECT_NAME/build.sh"
+    echo "                export PRODUCT=$PRODUCT_VALUE" >> "$PWD/$CONST_PROJECT_NAME/build.sh"
+    echo "                export HLQ=$HLQ_VALUE" >> "$PWD/$CONST_PROJECT_NAME/build.sh"
+    printf "              make -C $PATH " >> "$PWD/$CONST_PROJECT_NAME/build.sh" 
+    echo '$TARGETS clean' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
+    echo "$COMMAND_END" >> "$PWD/$CONST_PROJECT_NAME/build.sh"
     echo "                exit" >> "$PWD/$CONST_PROJECT_NAME/build.sh"
     echo '                ;;' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
+    echo '           -t)' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
+    echo '             if [ "$2" ]; then' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
+    echo '               if [[ -z "${TARGETS// }" ]]; then' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
+    echo '                   TARGETS+=$2' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
+    echo '               else' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
+    echo '                   TARGETS+=" "$2' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
+    echo '               fi' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
+    echo '               shift' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
+    echo '             else' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
+    echo '                 echo "-t requires a non-empty argument"' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
+    echo '                 exit' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
+    echo '             fi' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
+    echo '             ;;' >> "$PWD/$CONST_PROJECT_NAME/build.sh"    
     echo '           -?*)' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
-    echo "                printf '\\e[33;1m[WARNING]: Unknown option (ignored): %s\\e[0m\\n\' "\$1" >&2" >> "$PWD/$CONST_PROJECT_NAME/build.sh"
+    echo "                printf '\\e[33;1m[WARNING]: Unknown option (ignored): %s\\e[0m\\n' "\$1" >&2" >> "$PWD/$CONST_PROJECT_NAME/build.sh"
     echo '               ;;' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
     echo '            *)' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
     echo '                break' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
+    echo '                ;;' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
     echo '        esac' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
     echo '        shift' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
     echo '    done' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
     echo '}' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
     echo 'process_flags $*' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
     echo "$COMMAND_DEFAULT" >> "$PWD/$CONST_PROJECT_NAME/build.sh"
-    chmod +x "$PWD/$CONST_PROJECT_NAME/build.sh"
+    echo "export PRODUCT=$PRODUCT_VALUE" >> "$PWD/$CONST_PROJECT_NAME/build.sh"
+    echo "export HLQ=$HLQ_VALUE" >> "$PWD/$CONST_PROJECT_NAME/build.sh"
+    printf "make -C $PATH " >> "$PWD/$CONST_PROJECT_NAME/build.sh" 
+    echo '$TARGETS' >> "$PWD/$CONST_PROJECT_NAME/build.sh"
+    echo "$COMMAND_END" >> "$PWD/$CONST_PROJECT_NAME/build.sh"
 }
 
 process_flags() {
@@ -228,20 +274,16 @@ process_flags() {
                 ;;
             -v|--verbose)
                 FLAG_VERBOSE=1
-                shift
-                break
                 ;;
             --name=?*)
                 CONST_PROJECT_NAME=${1#*=}
                 FLAG_NEWSANDBOX=1
-                shift
                 ;;
             --name=)
                 die "[Fatal error]: \"--name\" requires a non-empty option argument."
                 ;;
             --make-build-script)
                 FLAG_MAKE_BUILD_SCRIPT=1
-                shift
                 ;;
             --)
                 shift
@@ -279,6 +321,8 @@ if [ -d $PWD/$CONST_PROJECT_NAME ]; then
                 create_build_script
             fi
         fi
+        else
+            _say1 "[Info]: $PWD/$CONST_PROJECT_NAME/build.sh already exist" --info
     fi
 fi
 
