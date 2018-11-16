@@ -1,12 +1,12 @@
+SUBDIRS := $(shell find . -maxdepth 1 -regextype posix-extended -regex './[0-9]{2}.+' -type d | sort)
 
-LESSONS := lesson_1 \
-           lesson_2
-MAKE := 
-#make_main
-all: $(LESSONS)
+.PHONY : all test check $(SUBDIRS)
+all : $(SUBDIRS)
+test : all
+check : test
 
-lesson_1:
-	make --directory=01-basic
+$(SUBDIRS):
+	$(MAKE) -C $@ $(MAKECMDGOALS)
 
-lesson_2:
-	make --directory=02-simple-drawing
+.PHONY : clean
+clean : $(SUBDIRS)
