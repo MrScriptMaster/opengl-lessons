@@ -1,4 +1,5 @@
-SUBDIRS := $(shell find . -maxdepth 1 -regextype posix-extended -regex './[0-9]{2}.+' -type d | sort)
+SUBDIRS := ./commons
+SUBDIRS += $(shell find . -maxdepth 1 -regextype posix-extended -regex './[0-9]{2}.+' -type d | sort)
 
 .PHONY : all test check $(SUBDIRS)
 all : $(SUBDIRS)
