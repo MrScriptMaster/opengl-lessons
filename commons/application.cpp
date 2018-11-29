@@ -104,8 +104,6 @@ void Application::gInit(const char* title) {
     }
     /*** debug messages ***/
     if (m_bDebugging) {
-        glfwSetErrorCallback(glfwErrorCallback);
-        std::cout << "Info: " << "glfw error callback established" << std::endl;
         #if defined GLFW_OPENGL_DEBUG_CONTEXT
             if (GLAD_GL_ARB_debug_output)
             {
