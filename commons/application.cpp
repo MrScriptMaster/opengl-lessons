@@ -14,10 +14,6 @@
 
 //---------------
 #define LogError(msg)        std::cerr << "Error: " << msg << std::endl
-static void glfwErrorCallback(int error, const char* description)
-{
-    LogError("GLFW: " << description);
-}
 void APIENTRY debugCallbackARB(GLenum /* source */, 
                                GLenum /* type */, 
                                GLuint /* id */, 
