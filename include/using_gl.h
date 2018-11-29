@@ -4,7 +4,7 @@
 
 // Using GLFW3
 
-#include <glad/glad.h>
+#include "glad/glad.h"
 #include <GLFW/glfw3.h>
 
 // Для указания с помощью функций типа hint версии OpenGL контекста

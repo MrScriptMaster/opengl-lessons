@@ -5,11 +5,29 @@
  */
  
 #include "application.h"
+#include <cstdio>
+#include <iostream>
 
 /* 
  * void Application::run() реализован в заголовке
  */
 
+//---------------
+#define LogError(msg)        std::cerr << "Error: " << msg << std::endl
+static void glfwErrorCallback(int error, const char* description)
+{
+    LogError("GLFW: " << description);
+}
+void APIENTRY debugCallbackARB(GLenum /* source */, 
+                               GLenum /* type */, 
+                               GLuint /* id */, 
+                               GLenum /* severity */, 
+                               GLsizei /* length */, 
+                               const GLchar *message, 
+                               const GLvoid * /* userParam */)
+{
+    LogError("OpenGL: " << message);
+}
 //---------------
 
 #define G_DEFAULT_WIN_WIDTH_  800               // default width of main window
@@ -83,6 +101,23 @@ void Application::gInit(const char* title) {
     }
     else {
         gResize(m_imain_window_width, m_imain_window_height);
+    }
+    /*** debug messages ***/
+    if (m_bDebugging) {
+        glfwSetErrorCallback(glfwErrorCallback);
+        std::cout << "Info: " << "glfw error callback established" << std::endl;
+        #if defined GLFW_OPENGL_DEBUG_CONTEXT
+            if (GLAD_GL_ARB_debug_output)
+            {
+                glDebugMessageCallbackARB(debugCallbackARB, nullptr);
+                std::cout << "Info: " << "ARB error callback established" << std::endl;
+            }
+            else {
+                std::cout << "Warning: " << "No support for OpenGL debug output found!"  << std::endl;
+            }
+        #else
+            std::cout << "Warning: " << "debug output is not enabled" << std::endl;
+        #endif
     }
 } // gInit
 

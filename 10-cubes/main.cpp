@@ -7,7 +7,7 @@
 
 #include "application.h"
 #include "shader.h"
-#include "SOIL.h"
+#include <SOIL/SOIL.h>
 #include "model_cube.h"    // вершины для куба мы берем здесь
 
 #include <iostream>
@@ -21,7 +21,7 @@ BEGIN_APP_DECLARATION(Cube)
     virtual void gFinalize();
     void onKey(int key, int scancode, int action, int mods);
     Cube() 
-    : base(),
+    : base(true),
     m_Shaders(nullptr),
     rotate_angle(0.0f)
     {}

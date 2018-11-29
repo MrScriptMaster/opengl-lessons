@@ -6,7 +6,7 @@
  
 #include "application.h"
 #include "shader.h"
-#include "SOIL.h"
+#include <SOIL/SOIL.h>
 
 #include <iostream>
 

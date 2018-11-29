@@ -4,7 +4,7 @@ LIBS 	:=
 L_LIBS	:= -lstdc++ `pkg-config --libs glfw3 glu` -ldl
 LFLAGS	:= -pipe -pthread
 
-INCLUDES := . /usr/include/libdrm
+INCLUDES := . /usr/include/libdrm ../lib/glad/include
 OBJECTS  := ../commons/glad.o
 OBJECTS  += $(patsubst %.cpp, %.o, $(wildcard *.cpp))
 

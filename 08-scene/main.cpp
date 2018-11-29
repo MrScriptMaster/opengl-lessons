@@ -56,7 +56,7 @@
 
 #include "application.h"
 #include "shader.h"
-#include "SOIL.h"
+#include <SOIL/SOIL.h>
 
 #include <iostream>
 #include <glm/glm.hpp>
@@ -69,7 +69,7 @@ BEGIN_APP_DECLARATION(Scene)
     virtual void gFinalize();
     void onKey(int key, int scancode, int action, int mods);
     Scene() 
-    : base(),
+    : base(true),
     m_Shaders(nullptr)
     {}
 protected:
@@ -131,7 +131,7 @@ void Scene::gInit(const char* title) {
     // Загрузка текстуры
     //=====================================
     int width, height;
-    unsigned char *data;
+    unsigned char *data = NULL;
     glGenTextures(1, &texture_box);
     glBindTexture(GL_TEXTURE_2D, texture_box);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);

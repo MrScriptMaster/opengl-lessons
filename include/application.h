@@ -41,20 +41,23 @@
 
 class Application {
 protected:
-    inline Application()
+    inline Application(bool bDebugging = false)
         : m_imain_window_width(-1),
           m_imain_window_height(-1),
-          m_pWindow(nullptr) {}
-    inline Application(int width, int height) 
+          m_pWindow(nullptr),
+          m_bDebugging(bDebugging) {}
+    inline Application(int width, int height, bool bDebugging = false) 
         : m_imain_window_width(width),
           m_imain_window_height(height),
-          m_pWindow(nullptr) {}
+          m_pWindow(nullptr),
+          m_bDebugging(bDebugging) {}
     virtual ~Application() {}
     
     static Application* s_app;
     GLFWwindow* m_pWindow;
     int m_imain_window_width;
     int m_imain_window_height;
+    bool m_bDebugging;
     
     // default callbacks
     static void window_resize_callback(GLFWwindow* window, int width, int height);
