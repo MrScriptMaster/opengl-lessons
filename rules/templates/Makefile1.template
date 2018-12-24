@@ -55,3 +55,7 @@ clean:
 	$(COMPILER) -M $(CFLAGS) $(DEFINE) $(addprefix -I, $(INCLUDES)) $< -o $(OBJ_PREFIX)/$@  
 
 include $(wildcard $(OBJ_PREFIX)/*.d)
+
+# Print variable
+print-%:
+	@echo '$*=$($*)'
